@@ -183,6 +183,39 @@ void ICACHE_RAM_ATTR handleInterrupt_task3() {
   lastValue_task3 = newValue; 
 }
 
+// Task 4: Read Analog Input and Compute Running Average
+// This task reads analog input from a sensor connected to ANALOG_INPUT_PIN.
+// It calculates the running average of the analog readings and checks if the
+// average value exceeds half of the maximum voltage range. If it does, it
+// turns on the LED connected to LED4_PIN to indicate an error condition.
+void taskAnalogReading4(void *pvParameters) {
+  pinMode(ANALOG_INPUT_PIN, INPUT);
+  pinMode(LED4_PIN, OUTPUT);
+
+  for (;;) {
+    analogReading = analogRead(ANALOG_INPUT_PIN);
+    // Convert analog reading to voltage
+    analogVoltage = (analogReading / (double)MAX_ANALOG_READING) * MAX_ANALOG_VOLTAGE;
+
+    // Step1.Update running average
+    samples[samplesIndex] = analogVoltage;
+    samplesIndex = (samplesIndex + 1) % SAMPLES_COUNT;
+    runningAverage = 0;
+    for (int i = 0; i < SAMPLES_COUNT; i++) {
+      runningAverage += samples[i];
+    }
+    runningAverage /= SAMPLES_COUNT;
+
+    // step2.If running average exceeds half of the maximum range voltage, indicate error
+    if (runningAverage > HALF_MAX_RANGE_VOLTAGE) {
+      digitalWrite(LED4_PIN, HIGH); 
+    } else {
+      digitalWrite(LED4_PIN, LOW); 
+    }
+    vTaskDelay(pdMS_TO_TICKS(20)); 
+  }
+}
+
 
 // Task 7: Handle Button Events
 // This task monitors the state of a button connected to BUTTON_PIN.
@@ -234,39 +267,6 @@ void taskLEDEvent7(void *pvParameters) {
         Serial.println("LED toggled!");
       }
     }
-  }
-}
-
-// Task 4: Read Analog Input and Compute Running Average
-// This task reads analog input from a sensor connected to ANALOG_INPUT_PIN.
-// It calculates the running average of the analog readings and checks if the
-// average value exceeds half of the maximum voltage range. If it does, it
-// turns on the LED connected to LED4_PIN to indicate an error condition.
-void taskAnalogReading4(void *pvParameters) {
-  pinMode(ANALOG_INPUT_PIN, INPUT);
-  pinMode(LED4_PIN, OUTPUT);
-
-  for (;;) {
-    analogReading = analogRead(ANALOG_INPUT_PIN);
-    // Convert analog reading to voltage
-    analogVoltage = (analogReading / (double)MAX_ANALOG_READING) * MAX_ANALOG_VOLTAGE;
-
-    // Step1.Update running average
-    samples[samplesIndex] = analogVoltage;
-    samplesIndex = (samplesIndex + 1) % SAMPLES_COUNT;
-    runningAverage = 0;
-    for (int i = 0; i < SAMPLES_COUNT; i++) {
-      runningAverage += samples[i];
-    }
-    runningAverage /= SAMPLES_COUNT;
-
-    // step2.If running average exceeds half of the maximum range voltage, indicate error
-    if (runningAverage > HALF_MAX_RANGE_VOLTAGE) {
-      digitalWrite(LED4_PIN, HIGH); 
-    } else {
-      digitalWrite(LED4_PIN, LOW); 
-    }
-    vTaskDelay(pdMS_TO_TICKS(20)); 
   }
 }
 
